@@ -1,11 +1,9 @@
 use error_chain::error_chain;
-use std::io::Read;
+use serde::Deserialize;
 use serde_json;
-use serde::{Deserialize};
-//use curl::easy::Easy;
-//use curl::easy;
-//use restson::RestClient;
-
+use std::io::Read;
+use std::fs::File;
+use std::io::prelude::*;
 
 error_chain! {
     foreign_links {
@@ -14,36 +12,38 @@ error_chain! {
     }
 }
 
+
 #[derive(Deserialize, Debug)]
 struct Archive {
     archives: Vec<String>,
 }
 
 impl Archive {
-    pub fn get_months(self)  -> Vec<String> {
+    pub fn get_months(self) -> Vec<String> {
         self.archives
     }
 }
 
 fn main() -> Result<()> {
-    let mut res = reqwest::blocking::get("https://api.chess.com/pub/player/lgbarn/games/archives")?;
+    let mut res = reqwest::blocking::get("https://api.chess.com/pub/player/lgbarn1966/games/archives")?;
     let mut body = String::new();
     res.read_to_string(&mut body)?;
 
     let deserialized: Archive = serde_json::from_str(&body).unwrap();
 
-    println!("{:?}", deserialized.get_months());
+    let mut file = File::create("lgbarn1966.pgn")?;
 
-   
-    let mut res = reqwest::blocking::get("https://api.chess.com/pub/player/lgbarn/games/2010/05/pgn")?;
-    let mut data = String::new();
-    res.read_to_string(&mut data)?;
+    for month in deserialized.get_months().iter() {
+        let month = format!("{}/pgn", month);
 
-    
-    println!("{}", data);
-    
+        println!("Downloading game from {} for lgbarn1966", month);
+
+        let mut res = reqwest::blocking::get(&month)?;
+        let mut data = String::new();
+        res.read_to_string(&mut data)?;
+
+        writeln!(&mut file, "{}", data)?;
+    }
 
     Ok(())
 }
-
-
