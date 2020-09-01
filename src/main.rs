@@ -4,7 +4,6 @@ use serde::Deserialize;
 use serde_json;
 use std::fs::File;
 use std::io::{Read, Write};
-//use std::io::prelude::*;
 
 error_chain! {
     foreign_links {
@@ -37,10 +36,14 @@ fn main() -> Result<()> {
         )
         .get_matches();
 
-    let  currplayer = matches.value_of("player").unwrap_or("lgbarn");
+    let  currplayer = matches.value_of("player").unwrap();
+
+    let url = "https://api.chess.com/pub/player/".to_string() + currplayer + "/games/archives";
+
+    println!("{}", url);
 
     let mut res =
-        reqwest::blocking::get("https://api.chess.com/pub/player/lgbarn1966/games/archives")?;
+        reqwest::blocking::get(&url)?;
     let mut body = String::new();
     res.read_to_string(&mut body)?;
 
@@ -48,18 +51,16 @@ fn main() -> Result<()> {
 
     let filename = currplayer.to_string() + ".pgn";
 
-    println!("#############{}############", filename);
-
     let mut file = File::create(filename)?;
 
     for month in deserialized.get_months().iter() {
         let month = format!("{}/pgn", month);
 
-        println!("Downloading game from {} for lgbarn1966", month);
-
         let mut res = reqwest::blocking::get(&month)?;
         let mut data = String::new();
         res.read_to_string(&mut data)?;
+
+        println!("Downloading games from {} for lgbarn1966", month);
 
         writeln!(&mut file, "{}", data)?;
     }
