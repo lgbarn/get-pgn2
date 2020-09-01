@@ -21,3 +21,9 @@ version = "1.0.57"
 [dependencies.serde]
 version = "1.0.57"
 features = ["derive"]
+
+[dependencies.curl]
+version = "0.4.33"
+
+[dependencies.restson]
+version = "^0.6"
