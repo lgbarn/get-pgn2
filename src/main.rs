@@ -60,7 +60,7 @@ fn main() -> Result<()> {
         let mut data = String::new();
         res.read_to_string(&mut data)?;
 
-        println!("Downloading games from {} for lgbarn1966", month);
+        println!("Downloading games from {} for {}", month, currplayer);
 
         writeln!(&mut file, "{}", data)?;
     }
