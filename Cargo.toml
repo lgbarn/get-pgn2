@@ -4,6 +4,12 @@ version = "0.1.0"
 authors = ["Luther Barnum <luther.barnum@gmail.com>"]
 edition = "2018"
 
+[dependencies]
+serde_json = "1.0.57"
+curl = "0.4.33"
+restson = "0.6.0"
+clap = "2.33.3"
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies.reqwest]
@@ -15,18 +21,6 @@ features = ["blocking"]
 version = "0.12.4"
 default-features = true
 
-[dependencies.serde_json]
-version = "1.0.57"
-
 [dependencies.serde]
-version = "1.0.57"
+version = "1.0.115"
 features = ["derive"]
-
-[dependencies.curl]
-version = "0.4.33"
-
-[dependencies.restson]
-version = "^0.6"
-
-[dependencies.clap]
-version = "2.33.3"

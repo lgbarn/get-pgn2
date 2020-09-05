@@ -1,9 +1,9 @@
 use clap::{App, Arg};
 use error_chain::error_chain;
 use serde::Deserialize;
-use serde_json;
 use std::fs::File;
 use std::io::{Read, Write};
+use std::string::String;
 
 error_chain! {
     foreign_links {
@@ -40,8 +40,6 @@ fn main() -> Result<()> {
 
     let url = "https://api.chess.com/pub/player/".to_string() + currplayer + "/games/archives";
 
-    println!("{}", url);
-
     let mut res =
         reqwest::blocking::get(&url)?;
     let mut body = String::new();
@@ -53,14 +51,14 @@ fn main() -> Result<()> {
 
     let mut file = File::create(filename)?;
 
-    for month in deserialized.get_months().iter() {
-        let month = format!("{}/pgn", month);
+    for line in deserialized.get_months().iter() {
+        let monthly_games_url = format!("{}/pgn", line);
 
-        let mut res = reqwest::blocking::get(&month)?;
+        let mut res = reqwest::blocking::get(&monthly_games_url)?;
         let mut data = String::new();
         res.read_to_string(&mut data)?;
 
-        println!("Downloading games from {} for {}", month, currplayer);
+        println!("Downloading games from {} for {}", monthly_games_url, currplayer);
 
         writeln!(&mut file, "{}", data)?;
     }
