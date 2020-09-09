@@ -23,6 +23,8 @@ impl Archive {
     }
 }
 
+
+
 fn main() -> Result<()> {
     let matches = App::new("Get games from Chess.com")
         .version("0.1.0")
@@ -34,14 +36,24 @@ fn main() -> Result<()> {
                 .long("player")
                 .takes_value(true),
         )
+        .arg(
+            Arg::with_name("l")
+                .short("l")
+                .long("lichess")
+                .takes_value(false),
+        )
         .get_matches();
 
-    let  currplayer = matches.value_of("player").unwrap();
+    let currplayer = String::from(matches.value_of("player").unwrap());
 
-    let url = "https://api.chess.com/pub/player/".to_string() + currplayer + "/games/archives";
-
-    let mut res =
-        reqwest::blocking::get(&url)?;
+    let url: String = if matches.is_present("l"){
+        format!("https://lichess.org/api/games/user/{}", currplayer)
+    } else {
+        format!("https://api.chess.com/pub/player/{}/games/archives", currplayer)
+    };
+    //println!("URL: {}", url);
+    
+    let mut res = reqwest::blocking::get(&url)?;
     let mut body = String::new();
     res.read_to_string(&mut body)?;
 
@@ -58,10 +70,14 @@ fn main() -> Result<()> {
         let mut data = String::new();
         res.read_to_string(&mut data)?;
 
-        println!("Downloading games from {} for {}", monthly_games_url, currplayer);
+        println!(
+            "Downloading games from {} for {}",
+            monthly_games_url, currplayer
+        );
 
         writeln!(&mut file, "{}", data)?;
     }
 
     Ok(())
+    
 }
