@@ -12,6 +12,11 @@ error_chain! {
     }
 }
 
+enum ChessSite {
+    Chess,
+    LiChess,
+}
+
 #[derive(Deserialize, Debug)]
 struct Archive {
     archives: Vec<String>,
@@ -22,8 +27,6 @@ impl Archive {
         self.archives
     }
 }
-
-
 
 fn main() -> Result<()> {
     let matches = App::new("Get games from Chess.com")
@@ -46,16 +49,23 @@ fn main() -> Result<()> {
 
     let currplayer = String::from(matches.value_of("player").unwrap());
 
-    let url: String = if matches.is_present("l"){
-        format!("https://lichess.org/api/games/user/{}", currplayer)
+    if matches.is_present("l"){
+        get_games(&format!("https://lichess.org/api/games/user/{}", &currplayer), &currplayer)?
     } else {
-        format!("https://api.chess.com/pub/player/{}/games/archives", currplayer)
+        get_games(&format!("https://api.chess.com/pub/player/{}/games/archives", &currplayer), &currplayer)?
     };
-    //println!("URL: {}", url);
     
-    let mut res = reqwest::blocking::get(&url)?;
+    Ok(())
+    
+}
+
+fn get_games(url: &str, currplayer: &str) -> Result<()> {
+
+    let mut res = reqwest::blocking::get(url)?;
     let mut body = String::new();
     res.read_to_string(&mut body)?;
+
+    println!("{:?}", &url);
 
     let deserialized: Archive = serde_json::from_str(&body).unwrap();
 
@@ -77,7 +87,6 @@ fn main() -> Result<()> {
 
         writeln!(&mut file, "{}", data)?;
     }
-
-    Ok(())
     
+    Ok(())
 }
