@@ -12,11 +12,6 @@ error_chain! {
     }
 }
 
-enum ChessSite {
-    Chess,
-    LiChess,
-}
-
 #[derive(Deserialize, Debug)]
 struct Archive {
     archives: Vec<String>,
@@ -49,18 +44,25 @@ fn main() -> Result<()> {
 
     let currplayer = String::from(matches.value_of("player").unwrap());
 
-    if matches.is_present("l"){
-        get_games(&format!("https://lichess.org/api/games/user/{}", &currplayer), &currplayer)?
+    if matches.is_present("l") {
+        get_li_games(
+            &format!("https://lichess.org/api/games/user/{}", &currplayer),
+            &currplayer,
+        )?
     } else {
-        get_games(&format!("https://api.chess.com/pub/player/{}/games/archives", &currplayer), &currplayer)?
+        get_games(
+            &format!(
+                "https://api.chess.com/pub/player/{}/games/archives",
+                &currplayer
+            ),
+            &currplayer,
+        )?
     };
-    
+
     Ok(())
-    
 }
 
 fn get_games(url: &str, currplayer: &str) -> Result<()> {
-
     let mut res = reqwest::blocking::get(url)?;
     let mut body = String::new();
     res.read_to_string(&mut body)?;
@@ -87,6 +89,29 @@ fn get_games(url: &str, currplayer: &str) -> Result<()> {
 
         writeln!(&mut file, "{}", data)?;
     }
-    
+
+    Ok(())
+}
+
+fn get_li_games(url: &str, currplayer: &str) -> Result<()> {
+    println!("{:?}", &url);
+
+    let filename = currplayer.to_string() + ".pgn";
+
+    let mut file = File::create(filename)?;
+
+    //let monthly_games_url = format!("{}/pgn", &url);
+
+    let mut res = reqwest::blocking::get(url)?;
+    let mut data = String::new();
+    res.read_to_string(&mut data)?;
+
+    println!(
+        "Downloading games from {} for {}",
+        url, currplayer
+    );
+
+    writeln!(&mut file, "{}", data)?;
+
     Ok(())
 }
