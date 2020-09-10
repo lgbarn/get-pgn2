@@ -66,27 +66,21 @@ fn get_games(url: &str, currplayer: &str) -> Result<()> {
     let mut res = reqwest::blocking::get(url)?;
     let mut body = String::new();
     res.read_to_string(&mut body)?;
-
-    println!("{:?}", &url);
-
     let deserialized: Archive = serde_json::from_str(&body).unwrap();
-
     let filename = currplayer.to_string() + ".pgn";
-
     let mut file = File::create(filename)?;
 
     for line in deserialized.get_months().iter() {
         let monthly_games_url = format!("{}/pgn", line);
-
-        let mut res = reqwest::blocking::get(&monthly_games_url)?;
-        let mut data = String::new();
-        res.read_to_string(&mut data)?;
 
         println!(
             "Downloading games from {} for {}",
             monthly_games_url, currplayer
         );
 
+        let mut res = reqwest::blocking::get(&monthly_games_url)?;
+        let mut data = String::new();
+        res.read_to_string(&mut data)?;        
         writeln!(&mut file, "{}", data)?;
     }
 
@@ -100,17 +94,11 @@ fn get_li_games(url: &str, currplayer: &str) -> Result<()> {
 
     let mut file = File::create(filename)?;
 
-    //let monthly_games_url = format!("{}/pgn", &url);
+    println!("Downloading games from {} for {}", url, currplayer);
 
     let mut res = reqwest::blocking::get(url)?;
     let mut data = String::new();
     res.read_to_string(&mut data)?;
-
-    println!(
-        "Downloading games from {} for {}",
-        url, currplayer
-    );
-
     writeln!(&mut file, "{}", data)?;
 
     Ok(())
