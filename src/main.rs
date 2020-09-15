@@ -1,7 +1,7 @@
 use clap::{App, Arg};
 use error_chain::error_chain;
 use serde::Deserialize;
-use std::fs::File;
+use std::fs::OpenOptions;
 use std::io::{Read, Write};
 use std::string::String;
 
@@ -42,64 +42,61 @@ fn main() -> Result<()> {
         )
         .get_matches();
 
-    let currplayer = String::from(matches.value_of("player").unwrap());
+    let currplayer = || String::from(matches.value_of("player").unwrap());
+    let check_site = || matches.is_present("l");
 
-    if matches.is_present("l") {
+    if check_site() {
         get_li_games(
-            &format!("https://lichess.org/api/games/user/{}", &currplayer),
-            &currplayer,
+            &format!("https://lichess.org/api/games/user/{}", currplayer()),
+            currplayer(),
         )?
     } else {
         get_games(
             &format!(
                 "https://api.chess.com/pub/player/{}/games/archives",
-                &currplayer
+                &currplayer()
             ),
-            &currplayer,
+            currplayer(),
         )?
     };
 
     Ok(())
 }
 
-fn get_games(url: &str, currplayer: &str) -> Result<()> {
-    let mut res = reqwest::blocking::get(url)?;
+fn get_games(url: &str, currplayer: String) -> Result<()> {
     let mut body = String::new();
-    res.read_to_string(&mut body)?;
+    reqwest::blocking::get(url)?.read_to_string(&mut body)?;
     let deserialized: Archive = serde_json::from_str(&body).unwrap();
-    let filename = currplayer.to_string() + ".pgn";
-    let mut file = File::create(filename)?;
 
     for line in deserialized.get_months().iter() {
         let monthly_games_url = format!("{}/pgn", line);
 
-        println!(
-            "Downloading games from {} for {}",
-            monthly_games_url, currplayer
-        );
-
-        let mut res = reqwest::blocking::get(&monthly_games_url)?;
-        let mut data = String::new();
-        res.read_to_string(&mut data)?;        
-        writeln!(&mut file, "{}", data)?;
+        download_games(monthly_games_url.to_string(), currplayer.to_string())?;
     }
 
     Ok(())
 }
 
-fn get_li_games(url: &str, currplayer: &str) -> Result<()> {
+fn get_li_games(url: &str, currplayer: String) -> Result<()> {
     println!("{:?}", &url);
 
-    let filename = currplayer.to_string() + ".pgn";
+    download_games(url.to_string(), currplayer)?;
 
-    let mut file = File::create(filename)?;
+    Ok(())
+}
 
+fn download_games(url: String, currplayer: String) -> Result<()> {
     println!("Downloading games from {} for {}", url, currplayer);
-
-    let mut res = reqwest::blocking::get(url)?;
     let mut data = String::new();
-    res.read_to_string(&mut data)?;
-    writeln!(&mut file, "{}", data)?;
+    let mut option = OpenOptions::new();
+    option.write(true);
+    option.append(true);
+    option.create(true);
+
+    let filename = currplayer.to_string() + ".pgn";
+    reqwest::blocking::get(&url)?.read_to_string(&mut data)?;
+    let mut f = option.open(&filename)?;
+    writeln!(f, "{}", &data)?;
 
     Ok(())
 }
