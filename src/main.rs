@@ -46,41 +46,26 @@ fn main() -> Result<()> {
     let check_site = || matches.is_present("l");
 
     if check_site() {
-        get_li_games(
-            &format!("https://lichess.org/api/games/user/{}", currplayer()),
+        download_games(
+            format!("https://lichess.org/api/games/user/{}", currplayer()),
             currplayer(),
         )?
     } else {
-        get_games(
-            &format!(
-                "https://api.chess.com/pub/player/{}/games/archives",
-                &currplayer()
-            ),
-            currplayer(),
-        )?
+        let chess_url = format!(
+            "https://api.chess.com/pub/player/{}/games/archives",
+            &currplayer()
+        );
+
+        let mut body = String::new();
+        reqwest::blocking::get(&chess_url)?.read_to_string(&mut body)?;
+        let deserialized: Archive = serde_json::from_str(&body).unwrap();
+
+        for line in deserialized.get_months().iter() {
+            let monthly_games_url = format!("{}/pgn", line);
+
+            download_games(monthly_games_url.to_string(), currplayer())?;
+        }
     };
-
-    Ok(())
-}
-
-fn get_games(url: &str, currplayer: String) -> Result<()> {
-    let mut body = String::new();
-    reqwest::blocking::get(url)?.read_to_string(&mut body)?;
-    let deserialized: Archive = serde_json::from_str(&body).unwrap();
-
-    for line in deserialized.get_months().iter() {
-        let monthly_games_url = format!("{}/pgn", line);
-
-        download_games(monthly_games_url.to_string(), currplayer.to_string())?;
-    }
-
-    Ok(())
-}
-
-fn get_li_games(url: &str, currplayer: String) -> Result<()> {
-    println!("{:?}", &url);
-
-    download_games(url.to_string(), currplayer)?;
 
     Ok(())
 }
@@ -95,8 +80,7 @@ fn download_games(url: String, currplayer: String) -> Result<()> {
 
     let filename = currplayer.to_string() + ".pgn";
     reqwest::blocking::get(&url)?.read_to_string(&mut data)?;
-    let mut f = option.open(&filename)?;
-    writeln!(f, "{}", &data)?;
+    writeln!((option.open(filename)?), "{}", &data)?;
 
     Ok(())
 }
