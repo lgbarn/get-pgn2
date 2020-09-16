@@ -60,11 +60,15 @@ fn main() -> Result<()> {
         reqwest::blocking::get(&chess_url)?.read_to_string(&mut body)?;
         let deserialized: Archive = serde_json::from_str(&body).unwrap();
 
-        for line in deserialized.get_months().iter() {
+        deserialized.get_months().iter().for_each(|line| {
             let monthly_games_url = format!("{}/pgn", line);
 
-            download_games(monthly_games_url.to_string(), currplayer())?;
-        }
+            let download = download_games(monthly_games_url.to_string(), currplayer());
+            match download {
+                Ok(()) => println!("Successfully downloaded games"),
+                Err(err) => println!("Could not download games: {:?}", err),
+            }
+        });
     };
 
     Ok(())
@@ -74,13 +78,10 @@ fn download_games(url: String, currplayer: String) -> Result<()> {
     println!("Downloading games from {} for {}", url, currplayer);
     let mut data = String::new();
     let mut option = OpenOptions::new();
-    option.write(true);
-    option.append(true);
-    option.create(true);
+    option.write(true).append(true).create(true);
 
-    let filename = currplayer.to_string() + ".pgn";
     reqwest::blocking::get(&url)?.read_to_string(&mut data)?;
-    writeln!((option.open(filename)?), "{}", &data)?;
+    writeln!((option.open(currplayer.to_string() + "pgn")?), "{}", &data)?;
 
     Ok(())
 }
